@@ -1,9 +1,15 @@
-# ==========================
-# MongoDB Setup
-# ==========================
+from motor.motor_asyncio import AsyncIOMotorClient
 import os
-from pymongo import MongoClient
 
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-client = MongoClient(MONGO_URI)
+
+client = AsyncIOMotorClient(MONGO_URI)
+
 db = client.mental_health_db
+
+
+# ==============================
+# Helper function
+# ==============================
+def get_db():
+    return db
