@@ -11,7 +11,7 @@ class PHQ9(BaseModel):
     feeling_bad: int = Field(ge=0, le=3)
     concentration: int = Field(ge=0, le=3)
     slow_or_restless: int = Field(ge=0, le=3)
-    suicidal_thoughts: bool = False
+    suicidal_thoughts: bool = False  #yes or no 
 # ---------------- GAD7 ----------------
 class GAD7(BaseModel):
     nervous: int = Field(ge=0, le=3)
