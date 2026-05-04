@@ -1,6 +1,6 @@
 from schemas import PHQ9, GAD7, MentalHealthInput, MentalHealthOutput
 from datetime import datetime, timezone
-from db import db
+from db import get_db
 
 
 # ==========================
@@ -147,60 +147,56 @@ class MentalHealthModel:
     # ==========================
     # SAVE TO DATABASE (FOR GRAPHS)
     # ==========================
-    def save_scores(self, user_id: str, phq_score: int, gad_score: int,
-                     phq_severity: str, gad_severity: str):
+    async def save_scores(self, user_id, phq_score, gad_score,
+                      phq_severity, gad_severity):
 
-        if not user_id:
-            raise ValueError("user_id is required")
-
-        now = datetime.now(timezone.utc)
-
-        db.mental_health_scores.insert_one({
-            "user_id": user_id,
-            "phq9_score": phq_score,
-            "gad7_score": gad_score,
-            "phq9_severity": phq_severity,
-            "gad7_severity": gad_severity,
-            "created_at": now,
-            "week": now.isocalendar().week,
-            "month": now.month,
-            "year": now.year
-        })
-
+      db = get_db()
+      now = datetime.now(timezone.utc)
+  
+      await db.mental_health_scores.insert_one({
+          "user_id": user_id,
+          "phq9_score": phq_score,
+          "gad7_score": gad_score,
+          "phq9_severity": phq_severity,
+          "gad7_severity": gad_severity,
+          "created_at": now,
+          "week": now.isocalendar().week,
+          "month": now.month,
+          "year": now.year
+      })
     # ==========================
     # MAIN PREDICT FUNCTION
     # ==========================
-    def predict(self, data: MentalHealthInput) -> MentalHealthOutput:
+    async def predict(self, data: MentalHealthInput):
 
-        phq_score = self.score_phq9(data.phq9)
-        gad_score = self.score_gad7(data.gad9)
-
-        phq_severity = self.phq9_severity(phq_score)
-        gad_severity = self.gad7_severity(gad_score)
-
-        alerts, emergency = self.generate_alerts(
-            data.phq9, phq_score, gad_score
-        )
-
-        critical_message = self.get_critical_message(data.phq9)
-
-        # Save for graphs
-        self.save_scores(
-            data.user_id,
-            phq_score,
-            gad_score,
-            phq_severity,
-            gad_severity
-        )
-
-        return MentalHealthOutput(
-            phq9_score=phq_score,
-            phq9_severity=phq_severity,
-            gad7_score=gad_score,
-            gad7_severity=gad_severity,
-            alerts=alerts,
-            emergency=emergency,
-            critical_message=critical_message,
-            depression_advice=self.depression_advice(phq_severity),
-            anxiety_advice=self.anxiety_advice(gad_severity),
-        )
+      phq_score = self.score_phq9(data.phq9)
+      gad_score = self.score_gad7(data.gad7)
+  
+      phq_severity = self.phq9_severity(phq_score)
+      gad_severity = self.gad7_severity(gad_score)
+  
+      alerts, emergency = self.generate_alerts(
+          data.phq9, phq_score, gad_score
+      )
+  
+      critical_message = self.get_critical_message(data.phq9)
+  
+      await self.save_scores(
+          data.user_id,
+          phq_score,
+          gad_score,
+          phq_severity,
+          gad_severity
+      )
+  
+      return MentalHealthOutput(
+          phq9_score=phq_score,
+          phq9_severity=phq_severity,
+          gad7_score=gad_score,
+          gad7_severity=gad_severity,
+          alerts=alerts,
+          emergency=emergency,
+          critical_message=critical_message,
+          depression_advice=self.depression_advice(phq_severity),
+          anxiety_advice=self.anxiety_advice(gad_severity),
+      )
